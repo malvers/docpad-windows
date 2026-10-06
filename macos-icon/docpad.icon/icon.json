@@ -8,14 +8,14 @@
         {
           "name": "D",
           "image-name": "d.svg",
-          "glass": false
+          "glass": true
         }
       ],
-      "specular": false,
+      "specular": true,
       "blur-material": 0,
       "shadow": {
-        "kind": "none",
-        "opacity": 0
+        "kind": "neutral",
+        "opacity": 0.35
       },
       "translucency": {
         "enabled": false,
