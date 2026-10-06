@@ -1,0 +1,31 @@
+# Compiles the Mac app's icon for macOS 26 (Liquid Glass) on a Mac with Xcode 26 - the Mac at home has only the
+# Command Line Tools, and actool comes with Xcode. Input: macos-icon/docpad.icon (a copy of DOCPAD's app/docpad.icon:
+# the D as a flat layer, every glass effect off - Doc 06.10.2026: "warum ist das D unten so fuzzy?"); output: the
+# artifact docpad-mac-icon with Assets.car (into the app's Resources, Info.plist CFBundleIconName = docpad).
+name: macos-icon
+on:
+  push:
+    branches: [main]
+    paths: ['macos-icon/**', '.github/workflows/macos-icon.yml']
+  workflow_dispatch:
+jobs:
+  icon:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version
+      - name: actool
+        run: |
+          mkdir -p out
+          xcrun actool macos-icon/docpad.icon --compile out \
+            --output-format human-readable-text --notices --warnings --errors \
+            --output-partial-info-plist out/partial.plist \
+            --app-icon docpad --include-all-app-icons \
+            --enable-on-demand-resources NO --development-region en \
+            --target-device mac --minimum-deployment-target 26.0 --platform macosx
+          ls -la out
+          cat out/partial.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docpad-mac-icon
+          path: out/

@@ -4,6 +4,7 @@ name: build
 on:
   push:
     branches: [main]
+    paths-ignore: ['macos-icon/**', '.github/workflows/macos-icon.yml']   # the Mac icon has its own workflow
   workflow_dispatch:
 permissions:
   contents: write
