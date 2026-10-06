@@ -27,6 +27,35 @@ jobs:
             --target-device mac --minimum-deployment-target 26.0 --platform macosx
           ls -la out
           cat out/partial.plist
+      - name: shine variants
+        # Doc 06.10.2026: "Kann man den Glanz so ein bisschen reinmachen?" - the D as glass again, but solid: four steps
+        run: |
+          python3 - <<'PY'
+          import json, os, shutil, subprocess
+          base = json.load(open('macos-icon/docpad.icon/icon.json'))
+          off = {"enabled": False, "value": 0}
+          steps = {
+            "g1-glanz": ({"glass": True}, {"specular": True, "blur-material": 0, "shadow": {"kind": "none", "opacity": 0}, "translucency": off}),
+            "g2-glanz-schatten": ({"glass": True}, {"specular": True, "blur-material": 0, "shadow": {"kind": "neutral", "opacity": 0.35}, "translucency": off}),
+            "g3-glanz-hauch-glas": ({"glass": True}, {"specular": True, "blur-material": 0.1, "shadow": {"kind": "none", "opacity": 0}, "translucency": {"enabled": True, "value": 0.15}}),
+            "g4-kante-ohne-glanz": ({"glass": True}, {"specular": False, "blur-material": 0, "shadow": {"kind": "none", "opacity": 0}, "translucency": off}),
+          }
+          for name, (lay, grp) in steps.items():
+              d = 'v/' + name + '/docpad.icon'
+              shutil.copytree('macos-icon/docpad.icon/Assets', d + '/Assets')
+              j = json.loads(json.dumps(base)); j['groups'][0]['layers'][0].update(lay); j['groups'][0].update(grp)
+              json.dump(j, open(d + '/icon.json', 'w'), indent=2)
+              out = 'v/' + name + '/out'; os.makedirs(out)
+              subprocess.run(['xcrun', 'actool', d, '--compile', out, '--output-format', 'human-readable-text', '--errors',
+                '--output-partial-info-plist', out + '/partial.plist', '--app-icon', 'docpad', '--include-all-app-icons',
+                '--enable-on-demand-resources', 'NO', '--development-region', 'en', '--target-device', 'mac',
+                '--minimum-deployment-target', '26.0', '--platform', 'macosx'])
+              print('VARIANT', name, 'OK' if os.path.exists(out + '/Assets.car') else 'FAIL')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docpad-mac-icon-shine
+          path: v/
       - uses: actions/upload-artifact@v4
         with:
           name: docpad-mac-icon
