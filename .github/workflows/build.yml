@@ -1,0 +1,32 @@
+# Builds the Windows installer on a Windows runner and puts it on the release of this version
+# (https://github.com/malvers/docpad-windows/releases/latest) - nothing to install on the Mac.
+name: build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - run: npm install
+      - run: npx tauri icon app-icon.png
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: DOCPAD __VERSION__
+          releaseBody: 'DOCPAD für Windows: das Setup herunterladen und doppelklicken (installiert nur für dich, ohne Admin-Rechte).'
+          releaseDraft: false
+          prerelease: false

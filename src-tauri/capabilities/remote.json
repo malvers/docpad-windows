@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "remote",
+  "description": "The DOCPAD pages may move, maximize, minimize and close their own frameless window - nothing else",
+  "windows": ["main"],
+  "remote": { "urls": ["https://docalvers.de/*", "https://malvers.github.io/*"] },
+  "permissions": [
+    "core:window:allow-start-dragging",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-close"
+  ]
+}
