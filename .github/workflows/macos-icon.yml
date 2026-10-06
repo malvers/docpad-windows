@@ -14,18 +14,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: xcodebuild -version
-      - name: actool
+      - name: variants
+        # which keys this Xcode's actool takes: from the plainest icon.json up to the full one, each compiled on its own
         run: |
-          mkdir -p out
-          xcrun actool macos-icon/docpad.icon --compile out \
-            --output-format human-readable-text --notices --warnings --errors \
-            --output-partial-info-plist out/partial.plist \
-            --app-icon docpad --include-all-app-icons \
-            --enable-on-demand-resources NO --development-region en \
-            --target-device mac --minimum-deployment-target 26.0 --platform macosx
-          ls -la out
-          cat out/partial.plist
+          python3 - <<'PY'
+          import json, os, shutil, subprocess
+          base = json.load(open('macos-icon/docpad.icon/icon.json'))
+          layer = {"image-name": "d.svg", "name": "D"}
+          steps = [
+            ("A plain", {}, {}),
+            ("B layer glass off", {"glass": False}, {}),
+            ("C + specular off", {"glass": False}, {"specular": False}),
+            ("D + shadow, translucency off", {"glass": False}, {"specular": False, "shadow": {"kind": "none", "opacity": 0}, "translucency": {"enabled": False, "value": 0}}),
+            ("E + blur-material 0", {"glass": False}, {"specular": False, "shadow": {"kind": "none", "opacity": 0}, "translucency": {"enabled": False, "value": 0}, "blur-material": 0}),
+          ]
+          for name, lay, grp in steps:
+              d = 'v/' + name.split()[0] + '/docpad.icon'
+              shutil.copytree('macos-icon/docpad.icon/Assets', d + '/Assets')
+              j = {"fill": base["fill"], "groups": [dict({"layers": [dict(layer, **lay)]}, **grp)], "supported-platforms": {"squares": "shared"}}
+              json.dump(j, open(d + '/icon.json', 'w'), indent=2)
+              out = 'v/' + name.split()[0] + '/out'; os.makedirs(out)
+              r = subprocess.run(['xcrun', 'actool', d, '--compile', out, '--output-format', 'human-readable-text', '--errors',
+                '--output-partial-info-plist', out + '/partial.plist', '--app-icon', 'docpad', '--include-all-app-icons',
+                '--enable-on-demand-resources', 'NO', '--development-region', 'en', '--target-device', 'mac',
+                '--minimum-deployment-target', '26.0', '--platform', 'macosx'], capture_output=True, text=True)
+              ok = os.path.exists(out + '/Assets.car')
+              print('VARIANT', name, '->', 'OK' if ok else 'FAIL', (r.stdout + r.stderr).strip().splitlines()[:2] if not ok else '')
+          PY
+          ls -la v/*/out
       - uses: actions/upload-artifact@v4
         with:
           name: docpad-mac-icon
-          path: out/
+          path: v/
